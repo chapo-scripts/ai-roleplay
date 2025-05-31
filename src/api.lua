@@ -26,9 +26,9 @@ API = {
     generation = {
         status = API_GENERATION_STATUS.NONE,
         error = nil,
-        response = nil,
-    },
-    lastPrompt = ''
+        result = nil,
+        lastPrompt = ''
+    }
 };
 
 local PATH_MODELS = 'https://api.onlysq.ru/ai/models';
@@ -73,7 +73,7 @@ end
 function API:generate(model, bio, prompt, resolve, reject)
     API.generation.status = API_GENERATION_STATUS.SENT;
     API.generation.lastPrompt = prompt;
-    API.generation.error = nil;
+    API.generation.error, API.generation.result = nil, nil;
     Utils.asyncHttpRequest(
         'POST',
         PATH_GENERATE,
@@ -89,52 +89,28 @@ function API:generate(model, bio, prompt, resolve, reject)
             })
         },
         function(response)
-            for k, v in pairs(response) do print(k, type(v) == 'string' and u8:decode(v) or v) end
-            API.generation = {
-                response = response,
-                status = API_GENERATION_STATUS.NONE,
-                error = nil
-            };
+            API.generation.status = API_GENERATION_STATUS.NONE;
             if (response.status_code ~= 200) then
-                API.generation.error = response.status_code .. ': ' .. response.text;
-                reject(API.generation, nil, response.text);
-                return;
+                API.generation.error = ('HTTP_%d: %s'):format(response.status_code, response.text);
+                return resolve();
             end
-
             local status, result = pcall(decodeJson, response.text);
             if (not status or not result.id) then
-                reject(API.generation, nil, 'JSON Parse failed!');
-                return;
+                API.generation.error = 'JSON_ERROR: ' .. response.text;
+                return resolve();
             end
             math.randomseed(os.time() + os.clock());
             if (not result.choices or #result.choices == 0) then
-                API.generation.error = response.status_code .. ': ' .. response.text;
-                reject(API.generation, nil, 'No choices!');
-                return;
+                API.generation.error = 'NO_CHOICES: ' .. response.text;
+                return resolve();
             end
-            
-            local choiceIndex = math.randomseed(1, #result.choices);
-            -- print(choiceIndex)
-            -- for k, v in pairs(result.choices) do print('c', k, v) end
-            
-            local choice = result.choices[1].message.content;
-            sampAddChatMessage('ch+' .. type(choice), -1)
-            -- for k, v in pairs(choice) do print('c', k, v) end
-            if (resolve) then
-                resolve(API.generation, response, choice);
-            end
-            API.generation.status = API_GENERATION_STATUS.NONE;
+            API.generation.result = result.choices[1].message.content;
+            return resolve();
         end,
         function(err)
-            API.generation = {
-                response = nil,
-                status = API_GENERATION_STATUS.NONE,
-                error = err
-            };
-            if (reject) then
-                reject(API.generation, err, nil);
-            end
             API.generation.status = API_GENERATION_STATUS.NONE;
+            API.generation.error = tostring(err);
+            return resolve();
         end
     );
 end

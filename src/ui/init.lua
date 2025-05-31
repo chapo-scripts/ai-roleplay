@@ -78,10 +78,10 @@ imgui.OnFrame(
                     UI.model,
                     ffi.string(UI.prompt),
                     ffi.string(UI.input),
-                    function(_, response, choice)
-                        imgui.StrCopy(ResultWindow.buffer, choice or 'NULL');
+                    function()
+                        imgui.StrCopy(ResultWindow.buffer, API.generation.result or 'NULL');
                         UI.generation.status = false;
-                        table.insert(UI.history, { prompt = ffi.string(UI.input), result = ffi.string(choice)});
+                        table.insert(UI.history, { prompt = ffi.string(UI.input), result = API.generation.result});
                         ResultWindow.window[0] = true;
                     end,
                     function(errString, err)
@@ -115,23 +115,20 @@ imgui.OnFrame(
         local size = imgui.ImVec2(500, 600);
         imgui.SetNextWindowPos(imgui.ImVec2(res.x / 2, res.y / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5));
         imgui.SetNextWindowSize(size, imgui.Cond.FirstUseEver);
-        local isError = not ResultWindow.fromFavorites and ResultWindow.generation and ResultWindow.generation.error;
+        local isError = API.generation.error ~= nil;
         if (imgui.Begin('AI-RolePlay-Generation-Result', ResultWindow.window, imgui.WindowFlags.NoDecoration + (isError and imgui.WindowFlags.AlwaysAutoResize or 0))) then
             imgui.PushFont(UI.font[20].Bold);
             imgui.TextDisabled(ResultWindow.fromFavorites and u8'Сохраненная генерация: ' .. (UI.favorites[ResultWindow.fromFavorites].prompt) or u8'Результат генерации');
             imgui.PopFont();
             imgui.PushFont(UI.font[16].Bold);
-            for k, v in pairs(ResultWindow.generation or {}) do
-                -- imgui.Text('k = ' .. tostring(v));
-            end
+            
             if (isError) then
                 imgui.TextColored(imgui.ImVec4(1, 0, 0, 1), u8'Произошла ошибка: ');
-                imgui.TextWrapped(tostring(ResultWindow.generation.error));
+                imgui.TextWrapped(tostring(API.generation.error));
                 if (UI.Components.Button(u8'X Закрыть', imgui.ImVec2(size.x - 20, 25))) then
                     ResultWindow.window[0] = false;
                 end
             else
-                
                 imgui.InputTextMultiline('##gen-res', ResultWindow.buffer, ffi.sizeof(ResultWindow.buffer), imgui.ImVec2(size.x - 20, size.y - 50 - 25 - 5 - 25 - 25 - (ResultWindow.fromFavorites and 25 or 0)));
                 imgui.SetNextItemWidth(size.x - 20);
                 imgui.SliderInt('##delay', ResultWindow.delay, 0, 3000, u8'Задержка: %d мс.');
