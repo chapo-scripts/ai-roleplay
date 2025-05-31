@@ -8,7 +8,8 @@ UI = {
         Input = require('ui.components.input'),
         Navigation = require('ui.components.nav'),
         Header = require('ui.components.header'),
-        Spinner = require('ui.components.spinner')
+        Spinner = require('ui.components.spinner'),
+        CenterText = require('ui.components.center-text')
     },
     Page = {
         home = require('ui.page.home'),
@@ -48,7 +49,7 @@ UI = {
 };
 
 ResultWindow = {
-    window = imgui.new.bool(true),
+    window = imgui.new.bool(false),
     buffer = imgui.new.char[2048](''),
     generation = nil,
     delay = imgui.new.int(1000)
@@ -69,11 +70,14 @@ imgui.OnFrame(
         imgui.SetNextWindowSize(size, imgui.Cond.FirstUseEver);
         if (imgui.Begin('Main Window', UI.window, imgui.WindowFlags.NoDecoration)) then
             local size = imgui.GetWindowSize();
+            local DL = imgui.GetWindowDrawList();
+
             UI.Components.Header(size);
             
             local csize = imgui.ImVec2(size.x - 30, size.y - 60 - 15 - 15)
             imgui.SetCursorPos(imgui.ImVec2(-UI.tabAnimation.scroll, 60 + 15));
-            UI.Page.home(csize, function()
+            imgui.PushStyleColor(imgui.Col.ChildBg, imgui.ImVec4(0, 0, 0, 0));
+            UI.Page.home(DL, csize, function()
                 API:generate(
                     UI.model,
                     ffi.string(UI.prompt),
@@ -91,8 +95,22 @@ imgui.OnFrame(
                 );
             end);
             imgui.SameLine(nil, 15);
-            UI.Page.settings(csize);
+            UI.Page.settings(DL, csize);
+            imgui.PopStyleColor();
             UI.Components.Navigation(size, csize);
+
+            imgui.SetCursorPos(imgui.ImVec2(imgui.GetWindowWidth() - 37, 0));
+            local p = imgui.GetCursorScreenPos();
+            DL:AddRectFilled(p, p + imgui.ImVec2(30, 20), imgui.GetColorU32Vec4(imgui.ImVec4(0.55, 0.1, 0.1, 1)), 5, 4 + 8);
+            imgui.PushStyleVarFloat(imgui.StyleVar.FrameRounding, 5);
+            imgui.PushStyleColor(imgui.Col.Button, imgui.ImVec4(0.55, 0.1, 0.1, 1));
+            imgui.PushStyleColor(imgui.Col.ButtonHovered, imgui.ImVec4(0.74, 0.19, 0.19, 1));
+            imgui.PushStyleColor(imgui.Col.ButtonActive, imgui.ImVec4(0.74, 0.19, 0.19, 1));
+            if (UI.Components.Button('X', imgui.ImVec2(30, 20))) then
+                UI.window[0] = false;
+            end
+            imgui.PopStyleColor(3);
+            imgui.PopStyleVar();
         end
         imgui.End();
     end

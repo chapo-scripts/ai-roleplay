@@ -6,7 +6,7 @@ local function isHistoryItemLiked(item)
     end
 end
 
-return function(csize, inputCallback)
+return function(DL, csize, inputCallback)
     if (imgui.BeginChild('page-1', csize, true, imgui.WindowFlags.NoBackground)) then
         imgui.PushFont(UI.font[16].Bold);
         imgui.TextDisabled(u8'Генерация отыгровки');
@@ -36,7 +36,13 @@ return function(csize, inputCallback)
         imgui.TextDisabled(u8'Сохраненные отыгровки');
         imgui.SameLine(tsize.x + 15 + 15);
         imgui.TextDisabled(u8'История отыгровок')
+        local p = imgui.GetCursorScreenPos();
+        DL:AddRectFilled(p, p + tsize, imgui.GetColorU32Vec4(imgui.ImVec4(0.04, 0.04, 0.04, 1)), 10);
+    
         if (imgui.BeginChild('home-favorites', tsize, true)) then
+            if (#UI.favorites == 0) then
+                UI.Components.CenterText(u8'Тут пока пусто :(', imgui.ImVec4(1, 1, 1, 0.5));
+            end
             for index, data in ipairs(UI.favorites) do
                 local likeIndex = isHistoryItemLiked(data);
                 imgui.TextColored(likeIndex and imgui.ImVec4(1, 0, 0, 1) or imgui.ImVec4(1, 1, 1, 1), ti'heart');
@@ -57,14 +63,24 @@ return function(csize, inputCallback)
                         ResultWindow.fromFavorites = index;
                     end
                 end
+                if (imgui.IsItemHovered()) then
+                    imgui.SetMouseCursor(imgui.MouseCursor.Hand);
+                end
             end
         end
         imgui.EndChild();
         imgui.SameLine(tsize.x + 15 + 15);
+        local p = imgui.GetCursorScreenPos();
+        DL:AddRectFilled(p, p + tsize, imgui.GetColorU32Vec4(imgui.ImVec4(0.04, 0.04, 0.04, 1)), 10);
         if (imgui.BeginChild('home-history', tsize, true)) then
+            if (#UI.history == 0) then
+                UI.Components.CenterText(u8'Тут пока пусто', imgui.ImVec4(1, 1, 1, 0.5));
+                UI.Components.CenterText(u8'Сделайте запрос что бы исправить это!', imgui.ImVec4(1, 1, 1, 0.5));
+            end
             for index, data in ipairs(UI.history) do
                 local likeIndex = isHistoryItemLiked(data);
                 imgui.TextColored(likeIndex and imgui.ImVec4(1, 0, 0, 1) or imgui.ImVec4(1, 1, 1, 1), ti'heart');
+                local likeHovered = imgui.IsItemHovered();
                 if (imgui.IsItemClicked()) then
                     if (likeIndex == nil) then
                         table.insert(UI.favorites, data);
@@ -74,7 +90,7 @@ return function(csize, inputCallback)
                 end
                 imgui.SameLine(nil, 10);
                 
-                if (imgui.Selectable(data.prompt .. '##history-' .. index, false)) then
+                if (imgui.Selectable(data.prompt .. '##history-' .. index, false, nil, imgui.ImVec2(tsize.x - 16 - 16 - 10 - 20, 16))) then
                     if (API:isGenerationInProcess()) then
                         Message('Ошибка, дождитесь окончания генерации!');
                     else
@@ -82,6 +98,15 @@ return function(csize, inputCallback)
                         imgui.StrCopy(ResultWindow.buffer, data.result);
                         ResultWindow.fromFavorites = nil;
                     end
+                end
+                local itemHovered = imgui.IsItemHovered();
+                imgui.SameLine(nil, 10);
+                if (imgui.Text('x') or imgui.IsItemClicked()) then
+                    table.remove(UI.history, index);
+                end
+                local xHovered = imgui.IsItemHovered();
+                if (likeHovered or itemHovered or xHovered) then
+                    imgui.SetMouseCursor(imgui.MouseCursor.Hand);
                 end
             end
         end

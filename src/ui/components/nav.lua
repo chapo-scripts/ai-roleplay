@@ -2,8 +2,14 @@ return function(size, csize, navSize)
     local navSize = imgui.ImVec2(100, 40);
     imgui.SetCursorPos(imgui.ImVec2(size.x / 2 - navSize.x / 2, size.y - navSize.y - 15));
     local p = imgui.GetCursorScreenPos();
-    local DL = imgui.GetForegroundDrawList();
+    if (imgui.IsMouseHoveringRect(p, p + navSize)) then
+        imgui.SetMouseCursor(imgui.MouseCursor.Hand);
+    end
+    
+    
+    local DL = imgui.GetWindowDrawList();
     local color = imgui.GetColorU32Vec4(imgui.GetStyle().Colors[imgui.Col.ChildBg]);
+    -- DL:PushLayerID(1);
     DL:AddRectFilled(p, p + navSize, color, 10)
     
     local buttonSize = imgui.ImVec2(50, navSize.y);
@@ -23,5 +29,5 @@ return function(size, csize, navSize)
         end
     end
     DL:AddRect(p - imgui.ImVec2(5, 5), p + imgui.ImVec2(5, 5) + navSize, imgui.GetColorU32Vec4(imgui.GetStyle().Colors[imgui.Col.WindowBg]), 10, nil, 10)
-
+    -- DL:PopLayerID()
 end
