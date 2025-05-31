@@ -1,7 +1,14 @@
 Utils = {};
 
 local effil = require 'effil' -- В начало скрипта
-
+function Utils.bringFloatTo(from, to, start_time, duration)
+   local timer = os.clock() - start_time
+   if timer >= 0.00 and timer <= duration then
+       local count = timer / (duration / 100)
+       return from + (count * (to - from) / 100), true
+   end
+   return (timer > duration) and to or from, false
+end
 function Utils.asyncHttpRequest(method, url, args, resolve, reject)
    local request_thread = effil.thread(function (method, url, args)
       local requests = require 'requests'
