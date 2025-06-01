@@ -3,6 +3,8 @@ script_name('AI RolePlay');
 script_version('v0.1.1');
 script_author('chapo');
 
+GameWeapons = require('game.weapons');
+
 ffi = require('ffi');
 imgui = require('mimgui');
 ti = require('tabler_icons');
@@ -10,9 +12,12 @@ encoding = require('encoding');
 encoding.default = 'CP1251';
 u8 = encoding.UTF8;
 
+require('text-flags');
+-- require('profiles');
 require('utils');
 require('api');
 require('ui');
+
 
 function Message(...)
     return sampAddChatMessage(('AI RolePlay // %s'):format(table.concat({...}, ' ')), -1);
@@ -50,7 +55,7 @@ addEventHandler('onSendRpc', function(id, bs)
             return false;
         end
     end
-end)
+end);
 
 function main()
     while not isSampAvailable() do wait(0) end

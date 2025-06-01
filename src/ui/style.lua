@@ -11,6 +11,7 @@ return {
 
         local colors = style.Colors;
         colors[imgui.Col.WindowBg] = imgui.ImVec4(0.07, 0.07, 0.07, 1);
+        -- colors[imgui.Col.] = colors[imgui.Col.WindowBg];
         colors[imgui.Col.ChildBg] = imgui.ImVec4(0.04, 0.04, 0.04, 1);
         colors[imgui.Col.PopupBg] = imgui.ImVec4(0.04, 0.04, 0.04, 1);
         colors[imgui.Col.Button] = imgui.ImVec4(0.04, 0.04, 0.04, 1);
@@ -28,5 +29,6 @@ return {
         colors[imgui.Col.ScrollbarGrab] = imgui.ImVec4(1, 1, 1, 0.5);
         colors[imgui.Col.ScrollbarGrabHovered] = imgui.ImVec4(1, 1, 1, 0.5);
         colors[imgui.Col.ScrollbarGrabActive] = colors[imgui.Col.SliderGrab];
+        colors[imgui.Col.ModalWindowDimBg] = imgui.ImVec4(0, 0, 0, 0.33)
     end
 }

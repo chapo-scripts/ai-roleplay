@@ -4,6 +4,7 @@ local paskhalko = {
 };
 
 return function(size)
+    imgui.PushStyleColor(imgui.Col.ChildBg, imgui.GetStyle().Colors[imgui.Col.Button]);
     if (imgui.BeginChild('header', imgui.ImVec2(size.x - 20, 60), false, imgui.WindowFlags.NoMouseInputs + imgui.WindowFlags.NoScrollWithMouse + imgui.WindowFlags.NoScrollbar)) then
         imgui.PushFont(UI.font[50].Bold);
         imgui.SetCursorPos(imgui.ImVec2(5, 10));
@@ -30,4 +31,5 @@ return function(size)
         imgui.PopFont();
     end
     imgui.EndChild();
+    imgui.PopStyleColor();
 end

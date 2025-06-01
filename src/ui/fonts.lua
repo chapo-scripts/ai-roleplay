@@ -37,7 +37,7 @@ return {
         config.GlyphOffset.y = 1;
 
         for name, fontBase85 in pairs(fontsBase85) do
-            for _, size in ipairs({ 14, 16, 20, 25, 30, 50 }) do
+            for _, size in ipairs({ 14, 16, 18, 20, 25, 30, 50 }) do
                 UI.font[size] = {};
                 -->> Font
                 UI.font[size][name] = imgui.GetIO().Fonts:AddFontFromMemoryCompressedBase85TTF(fontBase85, size, nil, range[0].Data)

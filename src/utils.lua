@@ -1,4 +1,8 @@
 Utils = {};
+local CPopulation__IsMale = ffi.cast('bool(__cdecl *)(int)', 0x611470);
+function Utils.isModelMale(modelId)
+   return CPopulation__IsMale(modelId);
+end
 
 local effil = require 'effil' -- В начало скрипта
 function Utils.bringFloatTo(from, to, start_time, duration)
@@ -9,6 +13,26 @@ function Utils.bringFloatTo(from, to, start_time, duration)
    end
    return (timer > duration) and to or from, false
 end
+
+function Utils.myid()
+   return select(2, sampGetPlayerIdByCharHandle(PLAYER_PED));
+end
+
+---@param path string directory
+---@param ftype string|string[] file extension
+---@return string[] files names
+function Utils.getFilesInPath(path, ftype)
+    assert(path, '"path" is required');
+    assert(type(ftype) == 'table' or type(ftype) == 'string', '"ftype" must be a string or array of strings');
+    local result = {};
+    for _, thisType in ipairs(type(ftype) == 'table' and ftype or { ftype }) do
+        local searchHandle, file = findFirstFile(path.."/"..thisType);
+        table.insert(result, file)
+        while file do file = findNextFile(searchHandle) table.insert(result, file) end
+    end
+    return result;
+end
+
 function Utils.asyncHttpRequest(method, url, args, resolve, reject)
    local request_thread = effil.thread(function (method, url, args)
       local requests = require 'requests'

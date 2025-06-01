@@ -51,7 +51,6 @@ function API:loadModelsList()
                 API.error = 'JSON Parse failed!';
                 return;
             end
-            -- API.models = result.models;
             for modelIndex, model in pairs(result.models) do
                 if (model.status == 'work' and model.paid == false and model.modality == 'text') then
                     API.models[modelIndex] = model;
@@ -71,24 +70,32 @@ function API:isGenerationInProcess()
 end
 
 function API:generate(model, bio, prompt, resolve, reject)
+    if (not API.models[model]) then
+        reject('MODEL_NOT_CHOOSEN');
+    end
     API.generation.status = API_GENERATION_STATUS.SENT;
     API.generation.lastPrompt = prompt;
     API.generation.error, API.generation.result = nil, nil;
+    local body = encodeJson({
+        model = model,
+        request = {
+            messages = {
+                { role = 'user', content = bio },
+                { role = 'user', content = prompt },
+            },
+        }
+    });
+    print('Sent:', body);
     Utils.asyncHttpRequest(
         'POST',
         PATH_GENERATE,
         {
-            data = encodeJson({
-                model = model,
-                request = {
-                    messages = {
-                        { role = 'user', content = bio },
-                        { role = 'user', content = prompt },
-                    },
-                }
-            })
+            data = body
         },
         function(response)
+            for k, v in pairs(response) do
+                print('RESPONSE', k, v);
+            end
             API.generation.status = API_GENERATION_STATUS.NONE;
             if (response.status_code ~= 200) then
                 API.generation.error = ('HTTP_%d: %s'):format(response.status_code, response.text);

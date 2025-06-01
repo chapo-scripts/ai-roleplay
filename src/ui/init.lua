@@ -16,14 +16,45 @@ UI = {
         settings = require('ui.page.settings'),
     },
     font = {},
-    prompt = imgui.new.char[2048](u8[[
-Ты - помощник который должен описать RolePlay отыгровку действия моего персонажа.
-Я отправляю тебе краткое описание отыгровки, а ты должен в ответ прислать список сообщений,
-которые я должен отправить в чат что бы отыграть ситуацию. Используй команды /me и /do.
+    prompt = imgui.new.char[16000](u8[[
+RP (Roleplay) — отыгрывание роли своего персонажа в игре, то есть игрок должен действовать так, как поступил бы его персонаж, а также учитывать, что его персонаж живёт, а не играет в игру.
+Для того что бы отыгрывать RolePlay.
 
-Отвечай без лишних комментариев, ТОЛЬКО ОТЫГРОВКИ. Каждое предложение должно быть написано с новой строки
+Ты - помощник который который будет получать тему для отыгровки действий. Ты должен описать RolePlay отыгровку действия персонажа.
+Я отправляю тебе краткое описание отыгровки, а ты должен в ответ прислать список сообщений,
+которые я должен отправить в чат что бы отыграть ситуацию.
+Для более качественной и подробной отыгровки, ПОМИМО простых сообщений используй команды. Так же в запросе в между "*" может быть указана обстановка.
+
+Я - игровой персонаж, действия которого нужно подробно расписать.
+
+При ответе используй:
+1. /s [текст] - крикнуть
+2. /c [текст] - шепнуть
+3. /n [текст] - сказать что-то в НЕИГРОВОЙ чат
+4. /me [действие] - отыграть действие от первого лица. С маленькой буквы и без знаков препинания в конце предложения.
+5. /do [действие] - отыграть действие от третьего лица. С большой буквы и с точкой на конце предложения.
+6. /todo [текст]*[действие] - отыграть действие сразу. С большой буквы, затем с маленькой буквы индентично /me.
+7. СООБЩЕНИЯ БЕЗ КОМАНДЫ ВЫСТАВЛЯЮТСЯ В ИГРОВОЙ ЧАТ, ТАК, КАК БУДТО ПЕРСОНАЖ ГОВОРИТ ЭТОТ ТЕКСТ
+
+Твой персонаж:
+1. Краткое описание персонажа: "21-летний латиноамериканец. На шее татуировка в виде дракона. На поясе кобура скрытого ношения в которой лежит Glock-17"
+2. Имя твоего персонажа - "{name}"
+3. Пол персонажа - {gender}
+Отвечай без лишних комментариев, ТОЛЬКО ОТЫГРОВКИ И СООБЩЕНИЯ. Каждое предложение должно быть написано с новой строки. Ответ не должен содержать пустых строк
+
+Стиль ответов - дерзкий, но без прямых оскорблений. Юмор - добавляй шутки в фразы персонажа.
+
+Требования к ответу:
+- ТЫ МОЖЕШЬ ОТЫГРЫВАТЬ ТОЛЬКО ДЕЙСТВИЯ СВОЕГО ПЕРСОНАЖА, ДЕЙСТВИЯ ДРУГИХ ОТЫГРЫВАТЬ КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО
+- ответ не должен содержать пустых строк
+- ответ не должен содержать лишних символов, эмодзи и смайликов
+- ответ должен быть НЕ МЕНЬШЕ 4 строк
+- ответ должен быть написан на русском языке
+- ответ должен быть максимально подробный и качественный
+- в ответе допускаются незначительные орфографические ошибки 
+- максимальная длина одной строки - 100 символов
     ]]),
-    input = imgui.new.char[1024](u8'Достал паспорт из кармана'),
+    input = imgui.new.char[1024](u8'*я в машине, меня остановил коп* открыл окно, достал паспорт из бордачка и протянул копу в окно'),
     tabs = {
         { name = 'home', icon = ti'home' },
         { name = 'settings', icon = ti'settings' }
@@ -84,8 +115,9 @@ imgui.OnFrame(
                     ffi.string(UI.input),
                     function()
                         imgui.StrCopy(ResultWindow.buffer, API.generation.result or 'NULL');
-                        UI.generation.status = false;
-                        table.insert(UI.history, { prompt = ffi.string(UI.input), result = API.generation.result});
+                        if (not API.generation.error) then
+                            table.insert(UI.history, { prompt = ffi.string(UI.input), result = API.generation.result});
+                        end
                         ResultWindow.window[0] = true;
                     end,
                     function(errString, err)
@@ -97,7 +129,7 @@ imgui.OnFrame(
             imgui.SameLine(nil, 15);
             UI.Page.settings(DL, csize);
             imgui.PopStyleColor();
-            UI.Components.Navigation(size, csize);
+            UI.Components.Navigation(imgui.GetForegroundDrawList(), size, csize);
 
             imgui.SetCursorPos(imgui.ImVec2(imgui.GetWindowWidth() - 37, 0));
             local p = imgui.GetCursorScreenPos();
@@ -120,21 +152,26 @@ local function send(text, delay)
     lua_thread.create(function()
         local text = u8:decode(text);
         for line in text:gmatch('[^\n]+') do
-            sampSendChat(line);
-            wait(delay);
+            if (#line:gsub('%s+', '') > 0) then
+                sampSendChat(line);
+                wait(delay);
+            end
         end
+        Message('Отправка завершена!');
     end)
 end
 
 imgui.OnFrame(
     function() return ResultWindow.window[0] end,
     function(thisWindow)
+        local isError = API.generation.error ~= nil;
         local res = imgui.ImVec2(getScreenResolution());
-        local size = imgui.ImVec2(500, 600);
+        local size = imgui.ImVec2(500, isError and 100 or 600);
         imgui.SetNextWindowPos(imgui.ImVec2(res.x / 2, res.y / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5));
         imgui.SetNextWindowSize(size, imgui.Cond.FirstUseEver);
-        local isError = API.generation.error ~= nil;
-        if (imgui.Begin('AI-RolePlay-Generation-Result', ResultWindow.window, imgui.WindowFlags.NoDecoration + (isError and imgui.WindowFlags.AlwaysAutoResize or 0))) then
+        imgui.PushStyleVarVec2(imgui.StyleVar.WindowMinSize, imgui.ImVec2(300, 300));
+        if (imgui.Begin('AI-RolePlay-Generation-Result', ResultWindow.window, imgui.WindowFlags.NoTitleBar + (isError and imgui.WindowFlags.AlwaysAutoResize or 0))) then
+            local size = imgui.GetWindowSize();
             imgui.PushFont(UI.font[20].Bold);
             imgui.TextDisabled(ResultWindow.fromFavorites and u8'Сохраненная генерация: ' .. (UI.favorites[ResultWindow.fromFavorites].prompt) or u8'Результат генерации');
             imgui.PopFont();
@@ -143,6 +180,7 @@ imgui.OnFrame(
             if (isError) then
                 imgui.TextColored(imgui.ImVec4(1, 0, 0, 1), u8'Произошла ошибка: ');
                 imgui.TextWrapped(tostring(API.generation.error));
+                imgui.TextDisabled(u8'Попробуйте выбрать другую модель в настройках!');
                 if (UI.Components.Button(u8'X Закрыть', imgui.ImVec2(size.x - 20, 25))) then
                     ResultWindow.window[0] = false;
                 end
@@ -167,5 +205,6 @@ imgui.OnFrame(
             imgui.PopFont();
         end
         imgui.End();
+        imgui.PopStyleVar();
     end
 );

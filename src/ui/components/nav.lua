@@ -1,4 +1,4 @@
-return function(size, csize, navSize)
+return function(_DL, size, csize, navSize)
     local navSize = imgui.ImVec2(100, 40);
     imgui.SetCursorPos(imgui.ImVec2(size.x / 2 - navSize.x / 2, size.y - navSize.y - 15));
     local p = imgui.GetCursorScreenPos();
@@ -8,7 +8,7 @@ return function(size, csize, navSize)
     
     
     local DL = imgui.GetWindowDrawList();
-    local color = imgui.GetColorU32Vec4(imgui.GetStyle().Colors[imgui.Col.ChildBg]);
+    local color = imgui.GetColorU32Vec4(imgui.ImVec4(0.04, 0.04, 0.04, 1));
     -- DL:PushLayerID(1);
     DL:AddRectFilled(p, p + navSize, color, 10)
     

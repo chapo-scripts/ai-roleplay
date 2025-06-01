@@ -1,3 +1,9 @@
+local bioAnimation = {
+    hovered = false,
+    start = 0,
+    alpha = 0
+};
+
 return function(DL, csize)
     if (imgui.BeginChild('page-2', csize, true, imgui.WindowFlags.NoBackground)) then
         local newDL = imgui.GetWindowDrawList();
@@ -44,8 +50,96 @@ return function(DL, csize)
         local p = imgui.GetCursorScreenPos();
         local isize = imgui.ImVec2(400, imgui.GetWindowHeight() - 20);
         DL:AddRectFilled(p, p + isize, imgui.GetColorU32Vec4(imgui.ImVec4(0.04, 0.04, 0.04, 1)), 10);
-        imgui.PushStyleColor(imgui.Col.FrameBg, imgui.ImVec4(0, 0, 0, 0));
-        imgui.InputTextMultiline('##prompt', UI.prompt, ffi.sizeof(UI.prompt), isize);
+        imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(1, 1, 1, bioAnimation.alpha + 0.2));
+        -- imgui.PushStyleColor(imgui.Col.FrameBg, imgui.ImVec4(0, 0, 0, 0));
+        -- -- imgui.InputTextMultiline('##prompt', UI.prompt, ffi.sizeof(UI.prompt), isize - imgui.ImVec2(0, 30));
+        -- imgui.PopStyleColor();
+        -- imgui.PushTextWrapPos(isize.x);
+        -- imgui.TextWrapped(ffi.string(UI.prompt));
+
+        if (imgui.BeginChild('prompt', isize - imgui.ImVec2(0, 30), true, imgui.WindowFlags.NoScrollbar)) then
+            imgui.TextWrapped(ffi.string(UI.prompt));
+        end
+        imgui.EndChild();
+
+        DL:AddRectFilled(p + imgui.ImVec2(0, isize.y - 30), p + imgui.ImVec2(isize.x, isize.y), imgui.GetColorU32Vec4(imgui.ImVec4(0.04, 0.04, 0.04, 1)), 10, 4 + 8)
+        local isHovered = imgui.IsItemHovered() or imgui.IsItemActive();
+        if (isHovered ~= bioAnimation.hovered) then
+            bioAnimation.hovered = isHovered;
+            bioAnimation.start = os.clock();
+        end
+        bioAnimation.alpha = Utils.bringFloatTo(bioAnimation.hovered and 1 or 0, bioAnimation.hovered and 0 or 1, bioAnimation.start, 0.2);
+        imgui.PushFont(UI.font[25].Bold);
+        local textSize = imgui.CalcTextSize(u8'Нажмите что бы изменить промпт');
+        DL:AddTextFontPtr(
+            UI.font[25].Bold,
+            25,
+            p + imgui.ImVec2(isize.x / 2 - textSize.x / 2, 50),
+            imgui.GetColorU32Vec4(imgui.ImVec4(1, 1, 1, 1 - bioAnimation.alpha)),
+            u8'Нажмите что бы изменить промпт'
+        );
+        imgui.PopFont();
+        imgui.PushFont(UI.font[16].Bold);
+        DL:AddTextFontPtr(
+            UI.font[16].Bold,
+            16,
+            p + imgui.ImVec2(15, 50 + 25 + 15),
+            imgui.GetColorU32Vec4(imgui.ImVec4(1, 1, 1, 1 - bioAnimation.alpha)),
+            u8'Промпт (от англ. prompt) - это запрос к нейросети с целью получить желаемое изображение или текст. Чем четче и правильнее прописан промпт, тем более релевантным будет результат.\n\nЗдесь вы можете описать роль своего персонажа что бы повысить качество генерации отыгровок!',
+            nil,
+            isize.x - 30
+        );
+        imgui.PopFont();
+        if (isHovered) then
+            imgui.SetMouseCursor(imgui.MouseCursor.Hand);
+            if (imgui.IsMouseClicked(0)) then
+                imgui.OpenPopup('edit-prompt');
+            end
+        end
+        -- imgui.GetWindowDrawList():AddRectFilled(p, p + isize, imgui.GetColorU32Vec4(imgui.ImVec4(0.04, 0.04, 0.04, bioAnimation.alpha)), 10);
+        imgui.PushStyleColor(imgui.Col.PopupBg, imgui.GetStyle().Colors[imgui.Col.WindowBg]);
+        if (imgui.BeginPopupModal('edit-prompt', nil, imgui.WindowFlags.AlwaysAutoResize + imgui.WindowFlags.NoDecoration)) then
+            imgui.PushFont(UI.font[20].Bold);
+            imgui.TextDisabled(u8'Редактирование промпта');
+            imgui.PopFont();
+
+            if (imgui.CollapsingHeader(u8'Флаги')) then
+                imgui.PushFont(UI.font[18].Bold);
+                imgui.TextDisabled(u8'Флаги');
+                imgui.PopFont();
+                imgui.PushFont(UI.font[16].Bold);
+                imgui.TextDisabled(u8'Для создания более подробного промпта Вы можете использовать следующие "флаги":');
+                imgui.Columns(3);
+                imgui.Text(u8'Флаг');
+                imgui.SetColumnWidth(-1, 100);
+                imgui.NextColumn();
+                imgui.Text(u8'Значение');
+                imgui.SetColumnWidth(-1, 150);
+                imgui.NextColumn();
+                imgui.Text(u8'Описание');
+                imgui.Columns(1);
+                imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(1, 1, 1, 0.5));
+                for k, v in ipairs(TextFlags.list) do
+                    imgui.Columns(3);
+                    imgui.Text(('{%s}'):format(v.flag));
+                    imgui.SetColumnWidth(-1, 100);
+                    imgui.NextColumn();
+                    imgui.Text(tostring(v.fn()));
+                    imgui.SetColumnWidth(-1, 150);
+                    imgui.NextColumn();
+                    imgui.Text(u8(v.description));
+                    imgui.Columns(1);
+                end
+                imgui.PopStyleColor();
+                imgui.PopFont();
+            end
+            imgui.InputTextMultiline('##prompt', UI.prompt, ffi.sizeof(UI.prompt), imgui.ImVec2(600, 700));
+            
+            if (UI.Components.Button(ti'check' .. u8' Сохранить##save-bio', imgui.ImVec2(600, 30))) then
+                imgui.CloseCurrentPopup();
+            end
+            imgui.EndPopup();
+        end
         imgui.PopStyleColor();
     end
     imgui.EndChild();

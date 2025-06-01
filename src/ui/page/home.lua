@@ -77,36 +77,39 @@ return function(DL, csize, inputCallback)
                 UI.Components.CenterText(u8'Тут пока пусто', imgui.ImVec4(1, 1, 1, 0.5));
                 UI.Components.CenterText(u8'Сделайте запрос что бы исправить это!', imgui.ImVec4(1, 1, 1, 0.5));
             end
-            for index, data in ipairs(UI.history) do
-                local likeIndex = isHistoryItemLiked(data);
-                imgui.TextColored(likeIndex and imgui.ImVec4(1, 0, 0, 1) or imgui.ImVec4(1, 1, 1, 1), ti'heart');
-                local likeHovered = imgui.IsItemHovered();
-                if (imgui.IsItemClicked()) then
-                    if (likeIndex == nil) then
-                        table.insert(UI.favorites, data);
-                    else
-                        table.remove(UI.favorites, likeIndex);
+            for index = #UI.history, 1, -1 do
+                local data = UI.history[index];
+                if (data) then
+                    local likeIndex = isHistoryItemLiked(data);
+                    imgui.TextColored(likeIndex and imgui.ImVec4(1, 0, 0, 1) or imgui.ImVec4(1, 1, 1, 1), ti'heart');
+                    local likeHovered = imgui.IsItemHovered();
+                    if (imgui.IsItemClicked()) then
+                        if (likeIndex == nil) then
+                            table.insert(UI.favorites, data);
+                        else
+                            table.remove(UI.favorites, likeIndex);
+                        end
                     end
-                end
-                imgui.SameLine(nil, 10);
-                
-                if (imgui.Selectable(data.prompt .. '##history-' .. index, false, nil, imgui.ImVec2(tsize.x - 16 - 16 - 10 - 20, 16))) then
-                    if (API:isGenerationInProcess()) then
-                        Message('Ошибка, дождитесь окончания генерации!');
-                    else
-                        ResultWindow.window[0] = true;
-                        imgui.StrCopy(ResultWindow.buffer, data.result);
-                        ResultWindow.fromFavorites = nil;
+                    imgui.SameLine(nil, 10);
+                    
+                    if (imgui.Selectable(data.prompt .. '##history-' .. index, false, nil, imgui.ImVec2(tsize.x - 16 - 16 - 10 - 20, 16))) then
+                        if (API:isGenerationInProcess()) then
+                            Message('Ошибка, дождитесь окончания генерации!');
+                        else
+                            ResultWindow.window[0] = true;
+                            imgui.StrCopy(ResultWindow.buffer, data.result);
+                            ResultWindow.fromFavorites = nil;
+                        end
                     end
-                end
-                local itemHovered = imgui.IsItemHovered();
-                imgui.SameLine(nil, 10);
-                if (imgui.Text('x') or imgui.IsItemClicked()) then
-                    table.remove(UI.history, index);
-                end
-                local xHovered = imgui.IsItemHovered();
-                if (likeHovered or itemHovered or xHovered) then
-                    imgui.SetMouseCursor(imgui.MouseCursor.Hand);
+                    local itemHovered = imgui.IsItemHovered();
+                    imgui.SameLine(nil, 10);
+                    if (imgui.Text('x') or imgui.IsItemClicked()) then
+                        table.remove(UI.history, index);
+                    end
+                    local xHovered = imgui.IsItemHovered();
+                    if (likeHovered or itemHovered or xHovered) then
+                        imgui.SetMouseCursor(imgui.MouseCursor.Hand);
+                    end
                 end
             end
         end
