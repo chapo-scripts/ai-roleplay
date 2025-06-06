@@ -29,6 +29,9 @@ return {
         colors[imgui.Col.ScrollbarGrab] = imgui.ImVec4(1, 1, 1, 0.5);
         colors[imgui.Col.ScrollbarGrabHovered] = imgui.ImVec4(1, 1, 1, 0.5);
         colors[imgui.Col.ScrollbarGrabActive] = colors[imgui.Col.SliderGrab];
-        colors[imgui.Col.ModalWindowDimBg] = imgui.ImVec4(0, 0, 0, 0.33)
+        colors[imgui.Col.ModalWindowDimBg] = imgui.ImVec4(0, 0, 0, 0.33);
+        colors[imgui.Col.ResizeGrip] = colors[imgui.Col.ChildBg];
+        colors[imgui.Col.ResizeGripHovered] = colors[imgui.Col.ChildBg];
+        colors[imgui.Col.ResizeGripActive] = colors[imgui.Col.ChildBg];
     end
 }

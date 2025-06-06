@@ -1,5 +1,5 @@
 local function isHistoryItemLiked(item)
-    for k, v in ipairs(UI.favorites) do
+    for k, v in ipairs(Config.favorites) do
         if (v.prompt == item.prompt and v.result == item.result) then
             return k;
         end
@@ -40,21 +40,27 @@ return function(DL, csize, inputCallback)
         DL:AddRectFilled(p, p + tsize, imgui.GetColorU32Vec4(imgui.ImVec4(0.04, 0.04, 0.04, 1)), 10);
     
         if (imgui.BeginChild('home-favorites', tsize, true)) then
-            if (#UI.favorites == 0) then
+            if (#Config.favorites == 0) then
                 UI.Components.CenterText(u8'Тут пока пусто :(', imgui.ImVec4(1, 1, 1, 0.5));
             end
-            for index, data in ipairs(UI.favorites) do
+            for index, data in ipairs(Config.favorites) do
                 local likeIndex = isHistoryItemLiked(data);
                 imgui.TextColored(likeIndex and imgui.ImVec4(1, 0, 0, 1) or imgui.ImVec4(1, 1, 1, 1), ti'heart');
                 if (imgui.IsItemClicked()) then
                     if (likeIndex == nil) then
-                        table.insert(UI.favorites, data);
+                        table.insert(Config.favorites, data);
                     else
-                        table.remove(UI.favorites, likeIndex);
+                        table.remove(Config.favorites, likeIndex);
                     end
+                    Config();
                 end
                 imgui.SameLine(nil, 10);
                 if (imgui.Selectable(data.prompt .. '##favorites-' .. index, false)) then
+                    ResultWindow.from = {
+                        source = 'favorites',
+                        prompt = data.prompt,
+                        index = index
+                    };
                     if (API:isGenerationInProcess()) then
                         Message('Ошибка, дождитесь окончания генерации!');
                     else
@@ -73,26 +79,32 @@ return function(DL, csize, inputCallback)
         local p = imgui.GetCursorScreenPos();
         DL:AddRectFilled(p, p + tsize, imgui.GetColorU32Vec4(imgui.ImVec4(0.04, 0.04, 0.04, 1)), 10);
         if (imgui.BeginChild('home-history', tsize, true)) then
-            if (#UI.history == 0) then
+            if (#Config.history == 0) then
                 UI.Components.CenterText(u8'Тут пока пусто', imgui.ImVec4(1, 1, 1, 0.5));
                 UI.Components.CenterText(u8'Сделайте запрос что бы исправить это!', imgui.ImVec4(1, 1, 1, 0.5));
             end
-            for index = #UI.history, 1, -1 do
-                local data = UI.history[index];
+            for index = #Config.history, 1, -1 do
+                local data = Config.history[index];
                 if (data) then
                     local likeIndex = isHistoryItemLiked(data);
                     imgui.TextColored(likeIndex and imgui.ImVec4(1, 0, 0, 1) or imgui.ImVec4(1, 1, 1, 1), ti'heart');
                     local likeHovered = imgui.IsItemHovered();
                     if (imgui.IsItemClicked()) then
                         if (likeIndex == nil) then
-                            table.insert(UI.favorites, data);
+                            table.insert(Config.favorites, data);
                         else
-                            table.remove(UI.favorites, likeIndex);
+                            table.remove(Config.favorites, likeIndex);
                         end
+                        Config();
                     end
                     imgui.SameLine(nil, 10);
                     
                     if (imgui.Selectable(data.prompt .. '##history-' .. index, false, nil, imgui.ImVec2(tsize.x - 16 - 16 - 10 - 20, 16))) then
+                        ResultWindow.from = {
+                            source = 'history',
+                            prompt = data.prompt,
+                            index = index
+                        };
                         if (API:isGenerationInProcess()) then
                             Message('Ошибка, дождитесь окончания генерации!');
                         else
@@ -104,7 +116,7 @@ return function(DL, csize, inputCallback)
                     local itemHovered = imgui.IsItemHovered();
                     imgui.SameLine(nil, 10);
                     if (imgui.Text('x') or imgui.IsItemClicked()) then
-                        table.remove(UI.history, index);
+                        table.remove(Config.history, index);
                     end
                     local xHovered = imgui.IsItemHovered();
                     if (likeHovered or itemHovered or xHovered) then

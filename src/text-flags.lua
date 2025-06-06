@@ -34,5 +34,11 @@ TextFlags = {
 };
 
 function TextFlags:replace(str)
-    return str:gsub('{[a-Az-Z0-9_]+}', self.list);
+    return str:gsub('{%w+}', function(key)
+        for _, flagData in ipairs(self.list) do
+            if (key == ('{%s}'):format(flagData.flag)) then
+                return flagData.fn();
+            end
+        end
+    end);
 end

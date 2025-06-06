@@ -1,4 +1,5 @@
 ---@diagnostic disable:lowercase-global
+DEV = LUBU_BUNDLED == nil; ---@diagnostic disable:lowercase-global
 script_name('AI RolePlay');
 script_version('v0.1.1');
 script_author('chapo');
@@ -12,46 +13,59 @@ encoding = require('encoding');
 encoding.default = 'CP1251';
 u8 = encoding.UTF8;
 
+require('config');
 require('text-flags');
--- require('profiles');
 require('utils');
 require('api');
 require('ui');
 
 
 function Message(...)
-    return sampAddChatMessage(('AI RolePlay // %s'):format(table.concat({...}, ' ')), -1);
+    return sampAddChatMessage(('AI RolePlay // {ffffff}%s'):format(table.concat({...}, ' ')), 0xFFe53978);
+end
+
+function Handler(prompt)
+    local prompt = prompt:gsub('^(%s+)', '')
+    if (API:isGenerationInProcess()) then
+        return Message('Пожалуи?ста, дождитесь окончания предыдущеи? генерации!');
+    end
+    if (#prompt > 0) then
+        local bio = TextFlags:replace(ffi.string(Config.bio));
+        Message('Генерирую отыгровку по запросу "' .. u8:decode(prompt) .. '"...');
+        ResultWindow.from = {
+            source = 'generation',
+            prompt = prompt,
+            index = -1
+        };
+        API:generate(
+            Config.model,
+            bio,
+            prompt,
+            function()
+                imgui.StrCopy(ResultWindow.buffer, API.generation.result or 'NULL');
+                if (not API.generation.error) then
+                    table.insert(Config.history, { prompt = prompt, result = API.generation.result});
+                    Config();
+                end
+                ResultWindow.window[0] = true;
+            end,
+            function(errString, err)
+                ResultWindow.generation = API.generation;
+                ResultWindow.window[0] = true;
+            end
+        );
+    else
+        Message('Ошибка, введите запрос!');
+    end
 end
 
 addEventHandler('onSendRpc', function(id, bs)
     if (id == 50) then
         local cmd = raknetBitStreamReadString(bs, raknetBitStreamReadInt32(bs));
-        local pattern = '^/' .. ffi.string(UI.cmd) .. '(.*)';
+        local pattern = '^/' .. ffi.string(Config.command) .. '(.*)';
         local prompt = cmd:match(pattern);
         if (prompt) then
-            local prompt = prompt:gsub('^(%s+)', '')
-            if (API:isGenerationInProcess()) then
-                return Message('Пожалуи?ста, дождитесь окончания предыдущеи? генерации!');
-            end
-            if (#prompt > 0) then
-                Message('Генерирую отыгровку по запросу "' .. prompt .. '"...');
-                API:generate(
-                    UI.model,
-                    u8(prompt),
-                    ffi.string(UI.input),
-                    function(generation, response, choice)
-                        ResultWindow.generation = generation;
-                        imgui.StrCopy(ResultWindow.buffer, choice or 'NULL');
-                        UI.generation.status = false;
-                        table.insert(UI.history, { prompt = u8(prompt), result = ffi.string(choice)});
-                    end,
-                    function(errString, err)
-                        ResultWindow.generation = API.generation;
-                    end
-                );
-            else
-                Message('Ошибка, введите запрос!');
-            end
+            Handler(u8(prompt));
             return false;
         end
     end
@@ -59,8 +73,13 @@ end);
 
 function main()
     while not isSampAvailable() do wait(0) end
+    Message('Введите {e53978}/airp {ffffff}для открытия меню ( {3992e5}t.me/chaposcripts{ffffff} )');
     sampRegisterChatCommand('airp', function()
         UI.window[0] = not UI.window[0];
+    end);
+    sampRegisterChatCommand('airp.reboot', function()
+        Message('Перезагрузка...');
+        thisScript():reload();
     end);
     API:loadModelsList();
     wait(-1);

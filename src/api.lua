@@ -80,7 +80,7 @@ function API:generate(model, bio, prompt, resolve, reject)
         model = model,
         request = {
             messages = {
-                { role = 'user', content = bio },
+                { role = 'user', content = TextFlags:replace(bio) },
                 { role = 'user', content = prompt },
             },
         }

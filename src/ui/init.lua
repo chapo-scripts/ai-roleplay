@@ -9,81 +9,43 @@ UI = {
         Navigation = require('ui.components.nav'),
         Header = require('ui.components.header'),
         Spinner = require('ui.components.spinner'),
-        CenterText = require('ui.components.center-text')
+        CenterText = require('ui.components.center-text'),
+        Hint = require('ui.components.hint')
     },
     Page = {
         home = require('ui.page.home'),
         settings = require('ui.page.settings'),
     },
     font = {},
-    prompt = imgui.new.char[16000](u8[[
-RP (Roleplay) — отыгрывание роли своего персонажа в игре, то есть игрок должен действовать так, как поступил бы его персонаж, а также учитывать, что его персонаж живёт, а не играет в игру.
-Для того что бы отыгрывать RolePlay.
-
-Ты - помощник который который будет получать тему для отыгровки действий. Ты должен описать RolePlay отыгровку действия персонажа.
-Я отправляю тебе краткое описание отыгровки, а ты должен в ответ прислать список сообщений,
-которые я должен отправить в чат что бы отыграть ситуацию.
-Для более качественной и подробной отыгровки, ПОМИМО простых сообщений используй команды. Так же в запросе в между "*" может быть указана обстановка.
-
-Я - игровой персонаж, действия которого нужно подробно расписать.
-
-При ответе используй:
-1. /s [текст] - крикнуть
-2. /c [текст] - шепнуть
-3. /n [текст] - сказать что-то в НЕИГРОВОЙ чат
-4. /me [действие] - отыграть действие от первого лица. С маленькой буквы и без знаков препинания в конце предложения.
-5. /do [действие] - отыграть действие от третьего лица. С большой буквы и с точкой на конце предложения.
-6. /todo [текст]*[действие] - отыграть действие сразу. С большой буквы, затем с маленькой буквы индентично /me.
-7. СООБЩЕНИЯ БЕЗ КОМАНДЫ ВЫСТАВЛЯЮТСЯ В ИГРОВОЙ ЧАТ, ТАК, КАК БУДТО ПЕРСОНАЖ ГОВОРИТ ЭТОТ ТЕКСТ
-
-Твой персонаж:
-1. Краткое описание персонажа: "21-летний латиноамериканец. На шее татуировка в виде дракона. На поясе кобура скрытого ношения в которой лежит Glock-17"
-2. Имя твоего персонажа - "{name}"
-3. Пол персонажа - {gender}
-Отвечай без лишних комментариев, ТОЛЬКО ОТЫГРОВКИ И СООБЩЕНИЯ. Каждое предложение должно быть написано с новой строки. Ответ не должен содержать пустых строк
-
-Стиль ответов - дерзкий, но без прямых оскорблений. Юмор - добавляй шутки в фразы персонажа.
-
-Требования к ответу:
-- ТЫ МОЖЕШЬ ОТЫГРЫВАТЬ ТОЛЬКО ДЕЙСТВИЯ СВОЕГО ПЕРСОНАЖА, ДЕЙСТВИЯ ДРУГИХ ОТЫГРЫВАТЬ КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО
-- ответ не должен содержать пустых строк
-- ответ не должен содержать лишних символов, эмодзи и смайликов
-- ответ должен быть НЕ МЕНЬШЕ 4 строк
-- ответ должен быть написан на русском языке
-- ответ должен быть максимально подробный и качественный
-- в ответе допускаются незначительные орфографические ошибки 
-- максимальная длина одной строки - 100 символов
-    ]]),
     input = imgui.new.char[1024](u8'*я в машине, меня остановил коп* открыл окно, достал паспорт из бордачка и протянул копу в окно'),
     tabs = {
         { name = 'home', icon = ti'home' },
         { name = 'settings', icon = ti'settings' }
     },
     tab = imgui.new.int(1),
-    history = {
-        { prompt = 'Hello', result = 'World' }
-    },
-    favorites = {},
     tabAnimation = {
         start = os.clock(),
         x = 0,
         scroll = 0,
         alpha = 0
     },
-    cmd = imgui.new.char[32]('/airp'),
     generation = {
         status = false,
         error = nil,
         result = {}
     },
-    model = 'gpt-4o'
 };
 
 ResultWindow = {
     window = imgui.new.bool(false),
     buffer = imgui.new.char[2048](''),
-    generation = nil,
-    delay = imgui.new.int(1000)
+    generation = {},
+    delay = imgui.new.int(1000),
+    from = {
+        prompt = 'none',
+        source = 'generation',
+        index = 1
+    }
 };
 
 imgui.OnInitialize(function()
@@ -95,6 +57,9 @@ end);
 imgui.OnFrame(
     function() return UI.window[0] end,
     function(thisWindow)
+        if (DEV) then
+            imgui.GetBackgroundDrawList():AddRectFilled(imgui.ImVec2(0, 0), imgui.GetIO().DisplaySize, imgui.GetColorU32Vec4(imgui.ImVec4(0, 1, 0.03, 1)));
+        end
         local res = imgui.ImVec2(getScreenResolution());
         local size = imgui.ImVec2(700, 450);
         imgui.SetNextWindowPos(imgui.ImVec2(res.x / 2, res.y / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5));
@@ -109,22 +74,7 @@ imgui.OnFrame(
             imgui.SetCursorPos(imgui.ImVec2(-UI.tabAnimation.scroll, 60 + 15));
             imgui.PushStyleColor(imgui.Col.ChildBg, imgui.ImVec4(0, 0, 0, 0));
             UI.Page.home(DL, csize, function()
-                API:generate(
-                    UI.model,
-                    ffi.string(UI.prompt),
-                    ffi.string(UI.input),
-                    function()
-                        imgui.StrCopy(ResultWindow.buffer, API.generation.result or 'NULL');
-                        if (not API.generation.error) then
-                            table.insert(UI.history, { prompt = ffi.string(UI.input), result = API.generation.result});
-                        end
-                        ResultWindow.window[0] = true;
-                    end,
-                    function(errString, err)
-                        ResultWindow.generation = API.generation;
-                        ResultWindow.window[0] = true;
-                    end
-                );
+                Handler(ffi.string(UI.input));
             end);
             imgui.SameLine(nil, 15);
             UI.Page.settings(DL, csize);
@@ -164,19 +114,24 @@ end
 imgui.OnFrame(
     function() return ResultWindow.window[0] end,
     function(thisWindow)
+        local source = ResultWindow.from.source;
         local isError = API.generation.error ~= nil;
         local res = imgui.ImVec2(getScreenResolution());
         local size = imgui.ImVec2(500, isError and 100 or 600);
         imgui.SetNextWindowPos(imgui.ImVec2(res.x / 2, res.y / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5));
         imgui.SetNextWindowSize(size, imgui.Cond.FirstUseEver);
         imgui.PushStyleVarVec2(imgui.StyleVar.WindowMinSize, imgui.ImVec2(300, 300));
+        imgui.PushStyleVarFloat(imgui.StyleVar.FrameRounding, 5);
         if (imgui.Begin('AI-RolePlay-Generation-Result', ResultWindow.window, imgui.WindowFlags.NoTitleBar + (isError and imgui.WindowFlags.AlwaysAutoResize or 0))) then
             local size = imgui.GetWindowSize();
             imgui.PushFont(UI.font[20].Bold);
-            imgui.TextDisabled(ResultWindow.fromFavorites and u8'Сохраненная генерация: ' .. (UI.favorites[ResultWindow.fromFavorites].prompt) or u8'Результат генерации');
+            imgui.TextDisabled((source == 'generation' or source == 'history') and u8'Результат генерации' or u8'Сохраненная генерация');
             imgui.PopFont();
+
             imgui.PushFont(UI.font[16].Bold);
-            
+            imgui.TextDisabled(u8'Запрос: ');
+            imgui.SameLine(nil, 0);
+            imgui.TextWrapped(tostring(ResultWindow.from.prompt)); --tostring(ResultWindow.fromFavorites and Config.favorites[ResultWindow.fromFavorites].prompt or API.generation.lastPrompt)
             if (isError) then
                 imgui.TextColored(imgui.ImVec4(1, 0, 0, 1), u8'Произошла ошибка: ');
                 imgui.TextWrapped(tostring(API.generation.error));
@@ -185,26 +140,28 @@ imgui.OnFrame(
                     ResultWindow.window[0] = false;
                 end
             else
-                imgui.InputTextMultiline('##gen-res', ResultWindow.buffer, ffi.sizeof(ResultWindow.buffer), imgui.ImVec2(size.x - 20, size.y - 50 - 25 - 5 - 25 - 25 - (ResultWindow.fromFavorites and 25 or 0)));
+                imgui.InputTextMultiline('##gen-res', ResultWindow.buffer, ffi.sizeof(ResultWindow.buffer), imgui.ImVec2(size.x - 20, size.y - imgui.GetCursorPosY() - 5 - 24 * 4 - (source == 'favorites' and 25 or 0)));
                 imgui.SetNextItemWidth(size.x - 20);
                 imgui.SliderInt('##delay', ResultWindow.delay, 0, 3000, u8'Задержка: %d мс.');
                 if (UI.Components.Button(ti'send-2' .. u8' Отправить в чат', imgui.ImVec2(size.x - 20, 25))) then
                     send(ffi.string(ResultWindow.buffer), ResultWindow.delay[0])
                     ResultWindow.window[0] = false;
+                    Config();
                 end
                 if (UI.Components.Button(u8'X Закрыть', imgui.ImVec2(size.x - 20, 25))) then
                     ResultWindow.window[0] = false;
                 end
-                if (ResultWindow.fromFavorites) then
+                if (ResultWindow.from.source == 'favorites') then
                     if (UI.Components.Button(ti'check' .. u8' Сохранить', imgui.ImVec2(size.x - 20, 25))) then
-                        UI.favorites[ResultWindow.fromFavorites].result = ffi.string(ResultWindow.buffer);
+                        Config.favorites[ResultWindow.from.index].result = ffi.string(ResultWindow.buffer);
                         ResultWindow.window[0] = false;
+                        Config();
                     end
                 end
             end
             imgui.PopFont();
         end
         imgui.End();
-        imgui.PopStyleVar();
+        imgui.PopStyleVar(2);
     end
 );
