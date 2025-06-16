@@ -1,1 +1,27 @@
-{"main":"src\\init.lua","out":"X:\\Arizona Games Launcher\\bin\\arizona\\moonloader\\ai-rp-bundled.lua","modules":{"api":"src\\api.lua","config":"src\\config.lua","profiles":"src\\profiles.lua","text-flags":"src\\text-flags.lua","ui.components.button":"src\\ui\\components\\button.lua","ui.components.center-text":"src\\ui\\components\\center-text.lua","ui.components.header":"src\\ui\\components\\header.lua","ui.components.hint":"src\\ui\\components\\hint.lua","ui.components.input":"src\\ui\\components\\input.lua","ui.components.nav":"src\\ui\\components\\nav.lua","ui.components.selectable-button":"src\\ui\\components\\selectable-button.lua","ui.components.spinner":"src\\ui\\components\\spinner.lua","ui.fonts":"src\\ui\\fonts.lua","ui.init":"src\\ui\\init.lua","ui.page.home":"src\\ui\\page\\home.lua","ui.page.settings":"src\\ui\\page\\settings.lua","ui.resource.fonts":"src\\ui\\resource\\fonts.lua","ui.style":"src\\ui\\style.lua","utils":"src\\utils.lua"},"watcher_delay":0,"const":{"VERSION":"0.0.1-DEVELOPMENT"}}
+{
+  "main": "src\\init.lua",
+  "out": "X:\\Arizona Games Launcher\\bin\\arizona\\moonloader\\ai-rp-bundled.lua",
+  "modules": {
+    "api": "src\\api.lua",
+    "config": "src\\config.lua",
+    "profiles": "src\\profiles.lua",
+    "text-flags": "src\\text-flags.lua",
+    "ui.components.button": "src\\ui\\components\\button.lua",
+    "ui.components.center-text": "src\\ui\\components\\center-text.lua",
+    "ui.components.header": "src\\ui\\components\\header.lua",
+    "ui.components.hint": "src\\ui\\components\\hint.lua",
+    "ui.components.input": "src\\ui\\components\\input.lua",
+    "ui.components.nav": "src\\ui\\components\\nav.lua",
+    "ui.components.selectable-button": "src\\ui\\components\\selectable-button.lua",
+    "ui.components.spinner": "src\\ui\\components\\spinner.lua",
+    "ui.fonts": "src\\ui\\fonts.lua",
+    "ui": "src\\ui\\init.lua",
+    "ui.page.home": "src\\ui\\page\\home.lua",
+    "ui.page.settings": "src\\ui\\page\\settings.lua",
+    "ui.resource.fonts": "src\\ui\\resource\\fonts.lua",
+    "ui.style": "src\\ui\\style.lua",
+    "utils": "src\\utils.lua"
+  },
+  "watcher_delay": 0,
+  "const": { "VERSION": "0.0.1-DEVELOPMENT" }
+}

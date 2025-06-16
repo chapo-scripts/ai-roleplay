@@ -1,7 +1,7 @@
 
 
 UI = {
-    window = imgui.new.bool(true),
+    window = imgui.new.bool(false),
     Components = {
         Button = require('ui.components.button'),
         SelectableButton = require('ui.components.selectable-button'),

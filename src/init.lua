@@ -63,10 +63,12 @@ addEventHandler('onSendRpc', function(id, bs)
     if (id == 50) then
         local cmd = raknetBitStreamReadString(bs, raknetBitStreamReadInt32(bs));
         local pattern = '^/' .. ffi.string(Config.command) .. '(.*)';
-        local prompt = cmd:match(pattern);
-        if (prompt) then
-            Handler(u8(prompt));
-            return false;
+        if (cmd:find(pattern)) then
+            local prompt = cmd:match(pattern);
+            if (prompt) then
+                Handler(u8(prompt));
+                return false;
+            end
         end
     end
 end);
