@@ -52,7 +52,7 @@ function API:loadModelsList()
                 return;
             end
             for modelIndex, model in pairs(result.models) do
-                if (model.status == 'work' and model.paid == false and model.modality == 'text') then
+                if (model.status == 'work' and model.modality == 'text') then
                     API.models[modelIndex] = model;
                 end
             end
